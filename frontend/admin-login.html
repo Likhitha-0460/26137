@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Q-ROUTE | Admin Login</title>
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+  <div class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-layout">
+        <section class="auth-hero">
+          <div class="brand-mark"><i class="fa-solid fa-user-shield"></i></div>
+          <h1>Admin access.</h1>
+          <p>Protected system monitoring for live users, route requests, traffic visibility, and route optimization analytics.</p>
+          <div class="feature-list">
+            <div class="feature-item"><span class="feature-dot"></span><span>Admin-only session validation</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span> Live route and location monitoring</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span> Benchmark and performance reports</span></div>
+          </div>
+        </section>
+
+        <section class="auth-panel">
+          <form id="admin-login-form" class="form-grid">
+            <div class="field">
+              <label for="admin-identifier">Admin Email / Phone / Username</label>
+              <input id="admin-identifier" type="text" placeholder="Enter admin identifier" required />
+            </div>
+            <div class="field">
+              <label for="admin-password">Password</label>
+              <input id="admin-password" type="password" placeholder="Enter admin password" required />
+            </div>
+            <button class="primary-btn" type="submit">Login as Admin</button>
+          </form>
+          <div id="admin-login-alert" class="alert error"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <script src="admin-login.js"></script>
+</body>
+</html>

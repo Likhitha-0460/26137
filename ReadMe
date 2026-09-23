@@ -1,0 +1,44 @@
+# Quantum-Inspired Intelligent Traffic Route Optimizer
+
+## Setup
+
+### Backend
+cd backend
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+
+First run downloads the OSM road network for the city set in config.py
+(default: Vijayawada, AP) and caches it as city_graph.graphml.
+Change CITY_NAME in config.py for a different demo city — smaller
+towns load faster than huge metros.
+
+### Frontend
+cd frontend
+Just open index.html in a browser (or run: python -m http.server 8080)
+Make sure the backend is running on http://localhost:5000 first.
+
+## How it works
+- graph_utils.py loads a real road network from OpenStreetMap
+- traffic_simulator.py injects dynamic, time-varying congestion
+- classical_router.py: Dijkstra + A* baselines
+- qiga_router.py: Quantum-Inspired Genetic Algorithm — Q-bit chromosomes
+  (rotation-angle amplitudes) are collapsed into concrete paths, scored,
+  and evolved via quantum rotation gates + quantum NOT-gate mutation
+- app.py exposes a Flask API; script.js renders everything on a Leaflet map
+  and shows a live cost/time comparison between classical and quantum-inspired routes
+
+Place `Banglore_traffic_Dataset.csv` here.
+
+Download from Kaggle:
+https://www.kaggle.com/datasets/preethamgouda/banglore-city-traffic-dataset
+
+Expected columns (names are auto-normalized by traffic_simulator.py,
+so minor spacing/punctuation differences in the CSV header are fine):
+
+Date, Area Name, Road/Intersection Name, Traffic Volume, Average Speed,
+Travel Time Index, Congestion Level, Road Capacity Utilization,
+Incident Reports, Environmental Impact, Public Transport Usage,
+Traffic Signal Compliance, Parking Usage, Weather Conditions
+

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Q-ROUTE | Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <style>
+    .dashboard-shell { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid rgba(148,163,184,.15); margin-bottom: 24px; }
+    .topbar h2 { font-size: 22px; font-weight: 700; color: #f1f5f9; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { padding: 20px; background: rgba(15,23,42,.55); border: 1px solid rgba(148,163,184,.12); border-radius: 14px; backdrop-filter: blur(12px); }
+    .stat-card .stat-label { font-size: 11px; font-weight: 600; color: rgba(148,163,184,.7); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .stat-card .stat-value { font-size: 28px; font-weight: 700; color: #f1f5f9; }
+    .stat-card .stat-icon { float: right; font-size: 24px; opacity: 0.3; color: #38bdf8; }
+    .card { padding: 20px; background: rgba(15,23,42,.55); border: 1px solid rgba(148,163,184,.12); border-radius: 14px; backdrop-filter: blur(12px); margin-bottom: 20px; }
+    .card h3 { font-size: 16px; font-weight: 600; color: #f1f5f9; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .card h3 i { color: #38bdf8; }
+    .user-table { width: 100%; border-collapse: collapse; }
+    .user-table th { text-align: left; padding: 10px 12px; background: rgba(30,41,59,.6); font-size: 11px; font-weight: 700; color: rgba(148,163,184,.8); text-transform: uppercase; letter-spacing: 0.5px; }
+    .user-table td { padding: 12px; border-bottom: 1px solid rgba(148,163,184,.08); color: #cbd5e1; font-size: 13px; }
+    .status-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .status-live { background: rgba(16,185,129,.15); color: #34d399; }
+    .status-idle { background: rgba(245,158,11,.15); color: #fbbf24; }
+    .status-offline { background: rgba(239,68,68,.1); color: #f87171; }
+    .role-admin { background: rgba(139,92,246,.15); color: #a78bfa; }
+    .role-user { background: rgba(56,189,248,.12); color: #38bdf8; }
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi { padding: 14px; background: rgba(30,41,59,.5); border-radius: 10px; text-align: center; }
+    .kpi small { display: block; font-size: 10px; font-weight: 600; color: rgba(148,163,184,.6); text-transform: uppercase; margin-bottom: 6px; }
+    .kpi strong { display: block; font-size: 24px; font-weight: 700; color: #f1f5f9; }
+    .route-req-table { width: 100%; border-collapse: collapse; }
+    .route-req-table th { text-align: left; padding: 10px 12px; background: rgba(30,41,59,.6); font-size: 11px; font-weight: 700; color: rgba(148,163,184,.8); text-transform: uppercase; }
+    .route-req-table td { padding: 10px 12px; border-bottom: 1px solid rgba(148,163,184,.08); color: #cbd5e1; font-size: 12px; }
+    .perf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .perf-item { padding: 12px; background: rgba(30,41,59,.4); border-radius: 8px; }
+    .perf-item .perf-label { font-size: 10px; color: rgba(148,163,184,.6); text-transform: uppercase; margin-bottom: 4px; }
+    .perf-item .perf-value { font-size: 18px; font-weight: 700; color: #38bdf8; }
+    .refresh-btn { padding: 8px 16px; background: rgba(56,189,248,.15); border: 1px solid rgba(56,189,248,.3); color: #38bdf8; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s; }
+    .refresh-btn:hover { background: rgba(56,189,248,.25); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="dashboard-shell">
+    <div class="topbar">
+      <div>
+        <h2><i class="fa-solid fa-shield-halved" style="color:#38bdf8"></i> Q-ROUTE Admin Dashboard</h2>
+        <div class="muted">System monitoring & user management</div>
+      </div>
+      <div class="profile-chip">
+        <span id="admin-name">Admin</span>
+        <button class="refresh-btn" id="refresh-btn" type="button"><i class="fa-solid fa-sync"></i> Refresh</button>
+        <button class="ghost-btn" id="logout-btn" type="button">Logout</button>
+      </div>
+    </div>
+
+    <!-- KPI Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <i class="fa-solid fa-users stat-icon"></i>
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value" id="stat-users">—</div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-route stat-icon"></i>
+        <div class="stat-label">Total Route Requests</div>
+        <div class="stat-value" id="stat-requests">—</div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-bolt stat-icon"></i>
+        <div class="stat-label">Requests Today</div>
+        <div class="stat-value" id="stat-today">—</div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-signal stat-icon"></i>
+        <div class="stat-label">Active Sessions</div>
+        <div class="stat-value" id="stat-sessions">—</div>
+      </div>
+      <div class="stat-card">
+        <i class="fa-solid fa-map-signs stat-icon"></i>
+        <div class="stat-label">Routes Generated</div>
+        <div class="stat-value" id="stat-routes">—</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- User Management -->
+      <section class="card">
+        <h3><i class="fa-solid fa-users-gear"></i> Registered Users</h3>
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th>Last Login</th>
+            </tr>
+          </thead>
+          <tbody id="admin-user-table">
+            <tr><td colspan="5" style="text-align:center;opacity:.5">Loading users...</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- System Performance -->
+      <section class="card">
+        <h3><i class="fa-solid fa-server"></i> System Performance</h3>
+        <div class="perf-grid" id="perf-grid">
+          <div class="perf-item"><div class="perf-label">Graph Nodes</div><div class="perf-value" id="perf-nodes">—</div></div>
+          <div class="perf-item"><div class="perf-label">Graph Edges</div><div class="perf-value" id="perf-edges">—</div></div>
+          <div class="perf-item"><div class="perf-label">Cache Entries</div><div class="perf-value" id="perf-cache">—</div></div>
+          <div class="perf-item"><div class="perf-label">Traffic Version</div><div class="perf-value" id="perf-traffic">—</div></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Recent Route Requests -->
+    <section class="card">
+      <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Route Requests</h3>
+      <table class="route-req-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Origin</th>
+            <th>Destination</th>
+            <th>Optimization</th>
+            <th>Traffic Pref</th>
+            <th>Routes</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="route-requests-table">
+          <tr><td colspan="7" style="text-align:center;opacity:.5">Loading...</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Traffic Insights -->
+    <section class="card">
+      <h3><i class="fa-solid fa-traffic-light"></i> Traffic Insights</h3>
+      <div class="kpi-row">
+        <div class="kpi"><small>Low Congestion</small><strong id="lowcount" style="color:#34d399">—</strong></div>
+        <div class="kpi"><small>Medium Congestion</small><strong id="midcount" style="color:#fbbf24">—</strong></div>
+        <div class="kpi"><small>High Congestion</small><strong id="highcount" style="color:#f87171">—</strong></div>
+      </div>
+      <div class="location-box">
+        <div id="admin-snapshot">Loading traffic data…</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:5000/api';
+    const SESSION_KEY = 'qroute-session';
+
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (!session || session.role !== 'admin') {
+      window.location.href = 'auth.html';
+    }
+
+    document.getElementById('admin-name').textContent = session?.name || 'Admin';
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try { await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' }); } catch {}
+      localStorage.removeItem(SESSION_KEY);
+      window.location.href = 'auth.html';
+    });
+
+    document.getElementById('refresh-btn').addEventListener('click', loadAllData);
+
+    async function loadAllData() {
+      await Promise.allSettled([loadStatistics(), loadUsers(), loadPerformance(), loadRecentRequests(), loadTraffic()]);
+    }
+
+    async function loadStatistics() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/statistics`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        document.getElementById('stat-users').textContent = data.total_users ?? '—';
+        document.getElementById('stat-requests').textContent = data.total_route_requests ?? '—';
+        document.getElementById('stat-today').textContent = data.requests_today ?? '—';
+        document.getElementById('stat-sessions').textContent = data.active_sessions ?? '—';
+        document.getElementById('stat-routes').textContent = data.total_routes_generated ?? '—';
+      } catch (e) { console.error('Stats error:', e); }
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/users`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        const table = document.getElementById('admin-user-table');
+        table.innerHTML = (data.users || []).map(u => `
+          <tr>
+            <td><strong>${u.name}</strong><br><span style="font-size:11px;opacity:.5">${u.username}</span></td>
+            <td>${u.email}</td>
+            <td><span class="status-pill ${u.role === 'admin' ? 'role-admin' : 'role-user'}">${u.role}</span></td>
+            <td style="font-size:11px">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+            <td style="font-size:11px">${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        document.getElementById('admin-user-table').innerHTML = `<tr><td colspan="5">${e.message}</td></tr>`;
+      }
+    }
+
+    async function loadPerformance() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/performance`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        document.getElementById('perf-nodes').textContent = data.graph_nodes?.toLocaleString() ?? '—';
+        document.getElementById('perf-edges').textContent = data.graph_edges?.toLocaleString() ?? '—';
+        document.getElementById('perf-cache').textContent = data.cache_entries ?? '—';
+        document.getElementById('perf-traffic').textContent = `v${data.traffic_version ?? 0}`;
+      } catch (e) { console.error('Perf error:', e); }
+    }
+
+    async function loadRecentRequests() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/statistics`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        const table = document.getElementById('route-requests-table');
+        const reqs = data.recent_requests || [];
+        if (!reqs.length) { table.innerHTML = '<tr><td colspan="7" style="text-align:center;opacity:.5">No route requests yet</td></tr>'; return; }
+        table.innerHTML = reqs.map(r => `
+          <tr>
+            <td>${r.user_name || '—'}</td>
+            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.origin_label || `${r.origin_lat?.toFixed(4)}, ${r.origin_lon?.toFixed(4)}`}</td>
+            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.destination_label || `${r.destination_lat?.toFixed(4)}, ${r.destination_lon?.toFixed(4)}`}</td>
+            <td><span class="status-pill" style="background:rgba(56,189,248,.12);color:#38bdf8">${r.optimization_mode || 'balanced'}</span></td>
+            <td>${(r.traffic_preference || 'any').toUpperCase()}</td>
+            <td>${r.requested_route_count || 3}</td>
+            <td style="font-size:11px">${r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</td>
+          </tr>
+        `).join('');
+      } catch (e) { console.error('Requests error:', e); }
+    }
+
+    async function loadTraffic() {
+      try {
+        const res = await fetch(`${API_BASE}/congestion`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) return;
+        const edges = data.edges || [];
+        let low = 0, mid = 0, high = 0;
+        edges.forEach(e => {
+          if (e.congestion <= 1.35) low++;
+          else if (e.congestion <= 2.0) mid++;
+          else high++;
+        });
+        document.getElementById('lowcount').textContent = low;
+        document.getElementById('midcount').textContent = mid;
+        document.getElementById('highcount').textContent = high;
+        document.getElementById('admin-snapshot').innerHTML = `
+          <strong>Live traffic distribution:</strong><br>
+          ${low} segments with low congestion<br>
+          ${mid} segments with medium congestion<br>
+          ${high} segments with high congestion<br>
+          <br>Total monitored road segments: ${edges.length}
+        `;
+      } catch (e) { console.error('Traffic error:', e); }
+    }
+
+    loadAllData();
+    setInterval(loadAllData, 30000); // Auto-refresh every 30s
+  </script>
+</body>
+</html>

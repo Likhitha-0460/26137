@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Q-ROUTE | User Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <style>
+    .dashboard-shell { max-width: 960px; margin: 0 auto; padding: 20px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid rgba(148,163,184,.15); margin-bottom: 24px; }
+    .topbar h2 { font-size: 22px; font-weight: 700; color: #f1f5f9; }
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .kpi { padding: 16px; background: rgba(15,23,42,.55); border: 1px solid rgba(148,163,184,.12); border-radius: 12px; text-align: center; }
+    .kpi small { display: block; font-size: 10px; font-weight: 600; color: rgba(148,163,184,.6); text-transform: uppercase; margin-bottom: 6px; }
+    .kpi strong { display: block; font-size: 22px; font-weight: 700; color: #f1f5f9; }
+    .card { padding: 20px; background: rgba(15,23,42,.55); border: 1px solid rgba(148,163,184,.12); border-radius: 14px; backdrop-filter: blur(12px); margin-bottom: 20px; }
+    .card h3 { font-size: 16px; font-weight: 600; color: #f1f5f9; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .card h3 i { color: #38bdf8; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .history-item { padding: 14px; margin-bottom: 10px; background: rgba(30,41,59,.4); border: 1px solid rgba(148,163,184,.1); border-radius: 10px; }
+    .history-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .history-date { font-size: 11px; color: rgba(148,163,184,.5); }
+    .history-mode { padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; background: rgba(56,189,248,.12); color: #38bdf8; }
+    .history-endpoints { margin-bottom: 8px; }
+    .history-ep { font-size: 12px; color: #cbd5e1; display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .history-routes { display: grid; gap: 4px; }
+    .history-route { display: flex; gap: 8px; align-items: center; font-size: 11px; color: #94a3b8; padding: 5px 8px; background: rgba(30,41,59,.4); border-radius: 6px; }
+    .history-route.sel { border: 1px solid rgba(16,185,129,.3); background: rgba(16,185,129,.06); }
+    .history-route strong { color: #f1f5f9; min-width: 40px; }
+    .traffic-low-text { color: #34d399; }
+    .traffic-medium-text { color: #fbbf24; }
+    .traffic-high-text { color: #f87171; }
+    .empty-msg { text-align: center; padding: 40px; color: rgba(148,163,184,.5); }
+    .empty-msg i { font-size: 36px; display: block; margin-bottom: 12px; }
+    .map-link { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; background: rgba(56,189,248,.15); border: 1px solid rgba(56,189,248,.25); color: #38bdf8; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+    .map-link:hover { background: rgba(56,189,248,.25); }
+  </style>
+</head>
+<body>
+  <div class="dashboard-shell">
+    <div class="topbar">
+      <div>
+        <h2><i class="fa-solid fa-user" style="color:#38bdf8"></i> User Dashboard</h2>
+        <div class="muted" id="user-welcome">Personal route optimization</div>
+      </div>
+      <div class="profile-chip">
+        <span id="user-name">User</span>
+        <button class="ghost-btn" id="logout-btn" type="button">Logout</button>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><small>Total Routes</small><strong id="route-count">—</strong></div>
+      <div class="kpi"><small>Account Status</small><strong id="status-pill" style="color:#34d399">Active</strong></div>
+      <div class="kpi"><small>Member Since</small><strong id="member-since" style="font-size:14px">—</strong></div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Route History</h3>
+        <div id="route-history-list">
+          <div class="empty-msg"><i class="fa-solid fa-route"></i>Loading route history...</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3><i class="fa-solid fa-user-gear"></i> Profile</h3>
+        <div id="profile-info" style="color:#cbd5e1;font-size:13px">Loading...</div>
+
+        <div style="margin-top:20px">
+          <h3><i class="fa-solid fa-map"></i> Route Planner</h3>
+          <p class="muted" style="margin-bottom:14px">Use the interactive map with quantum-inspired algorithms.</p>
+          <a href="/map" class="map-link"><i class="fa-solid fa-route"></i> Open Map & Algorithms</a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:5000/api';
+    const SESSION_KEY = 'qroute-session';
+
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (!session) { window.location.href = 'auth.html'; }
+
+    document.getElementById('user-name').textContent = session?.name || 'User';
+    document.getElementById('user-welcome').textContent = `Welcome back, ${session?.name || 'User'}`;
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try { await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' }); } catch {}
+      localStorage.removeItem(SESSION_KEY);
+      window.location.href = 'auth.html';
+    });
+
+    async function loadProfile() {
+      try {
+        const res = await fetch(`${API_BASE}/user/profile`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        const u = data.user;
+
+        document.getElementById('profile-info').innerHTML = `
+          <div style="margin-bottom:6px"><strong>Name:</strong> ${u.name}</div>
+          <div style="margin-bottom:6px"><strong>Email:</strong> ${u.email}</div>
+          <div style="margin-bottom:6px"><strong>Username:</strong> ${u.username}</div>
+          <div style="margin-bottom:6px"><strong>Phone:</strong> ${u.phone || '—'}</div>
+          <div><strong>Role:</strong> <span style="color:#38bdf8">${u.role}</span></div>
+        `;
+
+        if (u.created_at) {
+          document.getElementById('member-since').textContent = new Date(u.created_at).toLocaleDateString();
+        }
+      } catch (e) {
+        document.getElementById('profile-info').textContent = e.message;
+      }
+    }
+
+    async function loadRouteHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/routes/history`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        const history = data.history || [];
+        const container = document.getElementById('route-history-list');
+
+        document.getElementById('route-count').textContent = history.length;
+
+        if (!history.length) {
+          container.innerHTML = '<div class="empty-msg"><i class="fa-solid fa-route"></i>No routes yet. Use the map planner to calculate your first route.</div>';
+          return;
+        }
+
+        container.innerHTML = history.map(req => `
+          <div class="history-item">
+            <div class="history-item-header">
+              <span class="history-date">${new Date(req.created_at).toLocaleString()}</span>
+              <span class="history-mode">${req.optimization_mode || 'balanced'}</span>
+            </div>
+            <div class="history-endpoints">
+              <div class="history-ep"><i class="fa-solid fa-circle-dot" style="color:#34d399;font-size:10px"></i> ${req.origin_label || 'Origin'}</div>
+              <div class="history-ep"><i class="fa-solid fa-location-dot" style="color:#f87171;font-size:10px"></i> ${req.destination_label || 'Destination'}</div>
+            </div>
+            ${req.routes?.length ? `
+              <div class="history-routes">
+                ${req.routes.map(r => `
+                  <div class="history-route ${r.selected ? 'sel' : ''}">
+                    <strong>${r.algorithm || '—'}</strong>
+                    <span>${r.distance_km} km</span>
+                    <span>${r.travel_time_min} min</span>
+                    <span>₹${(r.fuel_cost || 0).toFixed(0)}</span>
+                    <span class="traffic-${(r.traffic_level || 'medium').toLowerCase()}-text">${r.traffic_level || '—'}</span>
+                    ${r.selected ? '<span style="color:#34d399">✓</span>' : ''}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('route-history-list').innerHTML = `<div class="empty-msg">${e.message}</div>`;
+      }
+    }
+
+    loadProfile();
+    loadRouteHistory();
+  </script>
+</body>
+</html>

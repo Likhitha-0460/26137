@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Q-ROUTE Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-result {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #ccc;
+    }
+    .success { border-left-color: #10b981; }
+    .error { border-left-color: #ef4444; }
+    .loading { border-left-color: #f59e0b; }
+    h1 { color: #1a73e8; }
+    button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { background: #1557b0; }
+  </style>
+</head>
+<body>
+  <h1>Q-ROUTE Backend API Test</h1>
+  <p>Testing backend connectivity and API endpoints...</p>
+  
+  <div id="results"></div>
+  
+  <button onclick="testGraphBounds()">Test Graph Bounds</button>
+  <button onclick="testGeocode()">Test Geocode</button>
+  <button onclick="testOptimize()">Test Route Optimization</button>
+  <button onclick="testCongestion()">Test Congestion</button>
+  
+  <script>
+    const API_BASE = 'http://localhost:5000';
+    const resultsDiv = document.getElementById('results');
+    
+    function addResult(message, type = 'loading') {
+      const div = document.createElement('div');
+      div.className = `test-result ${type}`;
+      div.textContent = message;
+      resultsDiv.appendChild(div);
+      return div;
+    }
+    
+    async function testGraphBounds() {
+      const result = addResult('Testing graph bounds endpoint...', 'loading');
+      try {
+        const response = await fetch(`${API_BASE}/api/graph-bounds`);
+        const data = await response.json();
+        result.className = 'test-result success';
+        result.textContent = `✓ Graph bounds loaded: ${data.city} (${data.node_count} nodes, ${data.edge_count} edges)`;
+      } catch (error) {
+        result.className = 'test-result error';
+        result.textContent = `✗ Graph bounds failed: ${error.message}`;
+      }
+    }
+    
+    async function testGeocode() {
+      const result = addResult('Testing geocode endpoint...', 'loading');
+      try {
+        const response = await fetch(`${API_BASE}/api/geocode?q=MG Road`);
+        const data = await response.json();
+        result.className = 'test-result success';
+        result.textContent = `✓ Geocode found ${data.length} locations for "MG Road"`;
+      } catch (error) {
+        result.className = 'test-result error';
+        result.textContent = `✗ Geocode failed: ${error.message}`;
+      }
+    }
+    
+    async function testOptimize() {
+      const result = addResult('Testing route optimization...', 'loading');
+      try {
+        const response = await fetch(`${API_BASE}/api/optimize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source_lat: 12.9716,
+            source_lon: 77.5946,
+            target_lat: 12.8399,
+            target_lon: 77.6770,
+            emergency_mode: false
+          })
+        });
+        const data = await response.json();
+        
+        if (data.error) {
+          result.className = 'test-result error';
+          result.textContent = `✗ Optimization failed: ${data.error}`;
+        } else {
+          const dijkstra = data.dijkstra?.distance_km || 'N/A';
+          const astar = data.astar?.distance_km || 'N/A';
+          const qiga = data.qiga?.distance_km || 'N/A';
+          result.className = 'test-result success';
+          result.textContent = `✓ Route optimization successful - Dijkstra: ${dijkstra}km, A*: ${astar}km, QIGA: ${qiga}km`;
+        }
+      } catch (error) {
+        result.className = 'test-result error';
+        result.textContent = `✗ Optimization failed: ${error.message}`;
+      }
+    }
+    
+    async function testCongestion() {
+      const result = addResult('Testing congestion endpoint...', 'loading');
+      try {
+        const response = await fetch(`${API_BASE}/api/congestion`);
+        const data = await response.json();
+        result.className = 'test-result success';
+        result.textContent = `✓ Congestion data loaded: ${data.edges.length} road segments`;
+      } catch (error) {
+        result.className = 'test-result error';
+        result.textContent = `✗ Congestion failed: ${error.message}`;
+      }
+    }
+    
+    // Auto-run basic test on load
+    window.onload = () => {
+      testGraphBounds();
+    };
+  </script>
+</body>
+</html>

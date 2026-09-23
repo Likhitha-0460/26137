@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Q-ROUTE - Quantum-Inspired Traffic Intelligence</title>
+  <meta name="description" content="AI-powered multi-user traffic route optimization with quantum-inspired algorithms for Bengaluru" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="brand">
+          <div class="logo">
+            <i class="fa-solid fa-route"></i>
+          </div>
+          <div class="brand-text">
+            <h1>Q-ROUTE</h1>
+            <p class="tagline">Quantum-Inspired Traffic Intelligence</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="header-nav">
+        <a href="#" class="nav-link active" data-section="map">
+          <i class="fa-solid fa-map"></i> Interactive Map
+        </a>
+        <a href="#" class="nav-link" data-section="analysis">
+          <i class="fa-solid fa-chart-line"></i> Benchmarking
+        </a>
+        <a href="#" class="nav-link" data-section="history">
+          <i class="fa-solid fa-clock-rotate-left"></i> Route History
+        </a>
+        <a href="#" class="nav-link" data-section="about">
+          <i class="fa-solid fa-flask"></i> Research Model
+        </a>
+      </nav>
+
+      <div class="header-right">
+        <div class="status-indicator" id="backend-status">
+          <span class="status-dot"></span>
+          <span class="status-text">Connecting...</span>
+        </div>
+        <div class="city-info" id="city-info">
+          <i class="fa-solid fa-city"></i>
+          <span>Loading...</span>
+        </div>
+        <div class="traffic-status" id="traffic-status">
+          <i class="fa-solid fa-traffic-light"></i>
+          <span>Checking...</span>
+        </div>
+        <div class="user-profile-chip" id="user-profile-chip">
+          <i class="fa-solid fa-user-circle"></i>
+          <span id="user-display-name">User</span>
+          <button class="logout-chip-btn" id="header-logout-btn" title="Logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Map Container -->
+      <div class="map-container">
+        <div id="map"></div>
+        <div class="map-selection-guide" id="map-selection-guide" aria-live="polite">
+          <i class="fa-solid fa-hand-pointer"></i>
+          <span>Click <strong>Pick A on map</strong> or <strong>Pick B on map</strong> to choose locations</span>
+        </div>
+
+        <!-- Map Controls -->
+        <div class="map-controls">
+          <button class="map-control-btn" id="zoom-in" title="Zoom In">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <button class="map-control-btn" id="zoom-out" title="Zoom Out">
+            <i class="fa-solid fa-minus"></i>
+          </button>
+          <button class="map-control-btn" id="fit-routes" title="Fit Routes">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+          <button class="map-control-btn" id="clear-routes" title="Clear Routes">
+            <i class="fa-solid fa-eraser"></i>
+          </button>
+          <button class="map-control-btn" id="toggle-traffic" title="Toggle Traffic">
+            <i class="fa-solid fa-road"></i>
+          </button>
+          <button class="map-control-btn" id="fullscreen" title="Fullscreen">
+            <i class="fa-solid fa-expand-arrows-alt"></i>
+          </button>
+        </div>
+
+        <!-- Legend -->
+        <div class="map-legend" id="map-legend">
+          <div class="legend-title">Route Colors</div>
+          <div class="legend-item">
+            <span class="legend-color" style="background:#06b6d4"></span>
+            <span>QPSO (Cyan)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background:#f59e0b"></span>
+            <span>ACO (Amber)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background:#2563eb"></span>
+            <span>Dijkstra (Blue)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background:#8b5cf6"></span>
+            <span>A* (Purple)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background:#10b981"></span>
+            <span>QIGA (Green)</span>
+          </div>
+          <div class="legend-item" style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:8px">
+            <span class="legend-color" style="background:linear-gradient(135deg,#10b981,#ef4444)"></span>
+            <span>Multi-route alternatives</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Search Panel -->
+      <div class="search-panel">
+        <div class="search-header">
+          <h2>Plan Your Route</h2>
+          <button class="minimize-btn" id="minimize-search">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+
+        <div class="search-body">
+          <!-- Source Input -->
+          <div class="location-input-group">
+            <div class="location-icon source-icon">
+              <i class="fa-solid fa-circle-dot"></i>
+            </div>
+            <div class="location-inputs">
+              <label class="location-label">From (Origin A)</label>
+              <input
+                type="text"
+                id="source-input"
+                placeholder="Search starting point..."
+                autocomplete="off"
+              />
+              <div class="autocomplete-dropdown" id="source-autocomplete"></div>
+            </div>
+            <button class="map-pick-btn" id="pick-source" title="Select starting point on map">
+              <i class="fa-solid fa-map-pin"></i>
+              <span>Pick A on map</span>
+            </button>
+          </div>
+
+          <!-- Swap Button -->
+          <button class="swap-btn" id="swap-locations">
+            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+          </button>
+
+          <!-- Destination Input -->
+          <div class="location-input-group">
+            <div class="location-icon target-icon">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div class="location-inputs">
+              <label class="location-label">To (Destination B)</label>
+              <input
+                type="text"
+                id="target-input"
+                placeholder="Search destination..."
+                autocomplete="off"
+              />
+              <div class="autocomplete-dropdown" id="target-autocomplete"></div>
+            </div>
+            <button class="location-action-btn clear-btn" id="clear-target" title="Clear">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+            <button class="map-pick-btn" id="pick-target" title="Select destination on map">
+              <i class="fa-solid fa-map-pin"></i>
+              <span>Pick B on map</span>
+            </button>
+          </div>
+          <p class="selection-hint"><i class="fa-solid fa-circle-info"></i> Type an address or use <strong>Pick A/B on map</strong>. Area name + coordinates are shown.</p>
+
+          <!-- Traffic Preference -->
+          <div class="route-options-section">
+            <label class="option-label">Traffic Preference</label>
+            <div class="traffic-pref-group" id="traffic-pref-group">
+              <button class="traffic-pref-btn" data-value="low" title="Prefer low-traffic roads">
+                <i class="fa-solid fa-leaf"></i> LOW
+              </button>
+              <button class="traffic-pref-btn" data-value="medium" title="Allow medium traffic">
+                <i class="fa-solid fa-car"></i> MEDIUM
+              </button>
+              <button class="traffic-pref-btn" data-value="high" title="Allow heavy traffic if faster">
+                <i class="fa-solid fa-fire"></i> HIGH
+              </button>
+              <button class="traffic-pref-btn active" data-value="any" title="Consider all traffic levels">
+                <i class="fa-solid fa-globe"></i> ANY
+              </button>
+            </div>
+          </div>
+
+          <!-- Number of Routes -->
+          <div class="route-options-section">
+            <label class="option-label">Number of Routes</label>
+            <div class="num-routes-group" id="num-routes-group">
+              <button class="num-route-btn" data-value="1">1</button>
+              <button class="num-route-btn" data-value="2">2</button>
+              <button class="num-route-btn active" data-value="3">3</button>
+              <button class="num-route-btn" data-value="4">4</button>
+              <button class="num-route-btn" data-value="5">5</button>
+            </div>
+          </div>
+
+          <!-- Optimization Mode -->
+          <div class="route-options-section">
+            <label class="option-label">Optimization</label>
+            <select id="optimization-mode" class="optimization-select">
+              <option value="balanced" selected>⚖️ Balanced (Overall Best)</option>
+              <option value="fastest">⚡ Fastest Route</option>
+              <option value="shortest">📏 Shortest Distance</option>
+              <option value="fuel_saver">⛽ Lowest Fuel Consumption</option>
+              <option value="cost_saver">💰 Lowest Fuel Cost</option>
+              <option value="low_traffic">🟢 Lowest Traffic</option>
+            </select>
+          </div>
+
+          <!-- Emergency Mode Toggle -->
+          <div class="emergency-toggle">
+            <label class="toggle-label">
+              <input type="checkbox" id="emergency-mode" />
+              <span class="toggle-slider"></span>
+              <span class="toggle-text">
+                <i class="fa-solid fa-truck-medical"></i>
+                Emergency Priority Mode
+              </span>
+            </label>
+          </div>
+
+          <!-- Optimize Button -->
+          <button class="optimize-btn" id="optimize-btn" disabled>
+            <i class="fa-solid fa-bolt"></i>
+            Find Optimized Routes
+          </button>
+        </div>
+      </div>
+
+      <!-- Route Results Panel -->
+      <div class="results-panel" id="results-panel">
+        <div class="results-header">
+          <h2>Route Alternatives</h2>
+          <button class="close-results" id="close-results">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="results-body" id="results-body">
+          <div class="empty-state">
+            <i class="fa-solid fa-route"></i>
+            <p>Enter origin and destination to see route alternatives</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Comparison Panel -->
+      <div class="comparison-panel" id="comparison-panel">
+        <div class="comparison-header">
+          <h2>Performance Comparison</h2>
+          <button class="minimize-comparison" id="minimize-comparison">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+
+        <div class="comparison-body">
+          <div class="benchmark-mode-selector">
+            <label>Benchmark Mode:</label>
+            <select id="benchmark-mode-select">
+              <option value="quick" selected>Quick (Dijkstra + A*)</option>
+              <option value="standard">Standard (+ ACO + QPSO)</option>
+              <option value="detailed">Detailed (All algorithms)</option>
+            </select>
+          </div>
+          <div class="comparison-table-container">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Algorithm</th>
+                  <th>Distance</th>
+                  <th>Time</th>
+                  <th>Fuel</th>
+                  <th>Cost</th>
+                  <th>Traffic</th>
+                  <th>Compute</th>
+                </tr>
+              </thead>
+              <tbody id="comparison-table-body">
+                <tr>
+                  <td colspan="7" class="no-data">Run a benchmark to compare all routing methods.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="comparison-charts">
+            <div class="chart-container">
+              <h3>Travel Time Comparison</h3>
+              <canvas id="time-chart"></canvas>
+            </div>
+            <div class="chart-container">
+              <h3>Cost Comparison</h3>
+              <canvas id="cost-chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route History Panel -->
+      <div class="history-panel" id="history-panel">
+        <div class="history-header">
+          <h2><i class="fa-solid fa-clock-rotate-left"></i> My Route History</h2>
+          <button class="close-history" id="close-history">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="history-body" id="history-body">
+          <div class="empty-state">
+            <i class="fa-solid fa-history"></i>
+            <p>No route history yet. Calculate a route to see it here.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- QIGA Technical Explanation -->
+      <div class="qiga-panel" id="qiga-panel">
+        <div class="qiga-header">
+          <h2>How QIGA Optimizes Your Route</h2>
+          <button class="toggle-qiga" id="toggle-qiga">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+
+        <div class="qiga-body">
+          <div class="qiga-process">
+            <div class="process-step">
+              <div class="step-icon"><i class="fa-solid fa-network-wired"></i></div>
+              <div class="step-content">
+                <h3>Weighted Road Network</h3>
+                <p>Loads real Bengaluru OSM network with distance, time, fuel, cost & traffic weights</p>
+              </div>
+            </div>
+            <div class="process-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+            <div class="process-step">
+              <div class="step-icon"><i class="fa-solid fa-calculator"></i></div>
+              <div class="step-content">
+                <h3>Multi-Objective Cost Function</h3>
+                <p>F = w₁×Distance + w₂×Time + w₃×Fuel + w₄×FuelCost + w₅×Traffic</p>
+              </div>
+            </div>
+            <div class="process-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+            <div class="process-step">
+              <div class="step-icon"><i class="fa-solid fa-atom"></i></div>
+              <div class="step-content">
+                <h3>Q-bit Chromosome + QPSO Particles</h3>
+                <p>Quantum rotation angles drive multi-objective optimization</p>
+              </div>
+            </div>
+            <div class="process-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+            <div class="process-step">
+              <div class="step-icon"><i class="fa-solid fa-trophy"></i></div>
+              <div class="step-content">
+                <h3>K Diverse Optimized Routes</h3>
+                <p>Edge-penalty diversification ensures genuinely different alternatives</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="qiga-metrics" id="qiga-metrics">
+            <h3>Optimization Metrics</h3>
+            <div class="metrics-grid">
+              <div class="metric-item">
+                <span class="metric-label">Population Size</span>
+                <span class="metric-value" id="metric-population">-</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Generations</span>
+                <span class="metric-value" id="metric-generations">-</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Best Fitness</span>
+                <span class="metric-value" id="metric-fitness">-</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Execution Time</span>
+                <span class="metric-value" id="metric-execution">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="research-console" id="research-console">
+        <div class="console-header">
+          <div>
+            <span class="eyebrow">RESEARCH WORKSPACE</span>
+            <h2>Quantum Route Lab</h2>
+          </div>
+          <span class="engine-pill">QPSO / CPU</span>
+        </div>
+        <div class="console-tabs">
+          <button class="console-tab active" data-console-tab="engine">Engine</button>
+          <button class="console-tab" data-console-tab="evaluation">Evaluation</button>
+          <button class="console-tab" data-console-tab="model">Model</button>
+        </div>
+        <section class="console-view active" data-console-view="engine">
+          <div class="parameter-grid">
+            <label>Population<input id="qpso-population" type="number" min="4" max="200" value="20"></label>
+            <label>Iterations<input id="qpso-iterations" type="number" min="2" max="500" value="40"></label>
+            <label>Seed<input id="qpso-seed" type="number" value="42"></label>
+            <label>Traffic<select id="traffic-mode"><option>Free Flow</option><option selected>Normal</option><option>Peak Hour</option><option>Heavy Congestion</option><option>Accident / Road Block</option></select></label>
+          </div>
+          <div class="weight-row"><label>Time <input id="weight-time" type="range" min="0" max="1" step="0.05" value="0.45"></label><output id="weight-time-value">0.45</output></div>
+          <div class="weight-row"><label>Distance <input id="weight-distance" type="range" min="0" max="1" step="0.05" value="0.20"></label><output id="weight-distance-value">0.20</output></div>
+          <div class="weight-row"><label>Congestion <input id="weight-congestion" type="range" min="0" max="1" step="0.05" value="0.30"></label><output id="weight-congestion-value">0.30</output></div>
+          <p class="formula">F = w₁×T + w₂×D + w₃×Fuel + w₄×FuelCost + w₅×C</p>
+          <div class="console-actions"><button id="rerun-qpso" class="console-primary"><i class="fa-solid fa-atom"></i> Run QPSO experiment</button><button id="save-experiment" class="console-icon" title="Save experiment"><i class="fa-solid fa-floppy-disk"></i></button></div>
+        </section>
+        <section class="console-view" data-console-view="evaluation">
+          <div class="metric-grid" id="research-metrics"><div><span>Fitness</span><strong id="research-fitness">--</strong></div><div><span>Distance</span><strong id="research-distance">--</strong></div><div><span>Travel time</span><strong id="research-time">--</strong></div><div><span>Congestion</span><strong id="research-congestion">--</strong></div><div><span>Runtime</span><strong id="research-runtime">--</strong></div><div><span>Improvement</span><strong id="research-improvement">--</strong></div></div>
+          <div class="chart-container research-chart"><h3>Actual fitness convergence</h3><canvas id="fitness-chart"></canvas></div>
+          <p id="why-route" class="explainability">Run an experiment to explain the selected route from computed metrics.</p>
+        </section>
+        <section class="console-view model-copy" data-console-view="model">
+          <h3>Weighted Graph & Constraints</h3>
+          <p>G = (V, E) with edges carrying: distance, travel time, fuel consumption, fuel cost, and live traffic congestion. The multi-objective cost normalizes all metrics before weighting.</p>
+          <p>QPSO particles evolve around personal/global best positions. QIGA uses quantum rotation gates to converge on optimal route selections from the real road network.</p>
+          <div class="constraint-list"><span>✓ Multi-objective normalization</span><span>✓ Blocked-edge avoidance</span><span>✓ Traffic-preference routing</span><span>✓ K-diverse route generation</span></div>
+        </section>
+      </aside>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p id="loading-text">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Error Toast -->
+    <div class="error-toast" id="error-toast">
+      <i class="fa-solid fa-exclamation-circle"></i>
+      <span id="error-message">Error message</span>
+      <button class="close-toast" id="close-toast">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Success Toast -->
+    <div class="success-toast" id="success-toast">
+      <i class="fa-solid fa-check-circle"></i>
+      <span id="success-message">Success</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="map.js"></script>
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+  </div>
+</body>
+</html>
